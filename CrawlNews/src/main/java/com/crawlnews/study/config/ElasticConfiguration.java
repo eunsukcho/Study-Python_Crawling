@@ -31,10 +31,7 @@ public class ElasticConfiguration {
    
    
    @Bean 
-    public Client client() throws Exception{ 
-      System.out.println("clusterName : " + clusterName);
-      System.out.println("host : " + host);
-      System.out.println("port : " + port);
+    public Client client() throws Exception{
        Settings settings = Settings.builder().put("cluster.name", clusterName).build();
     
        TransportClient client = new PreBuiltTransportClient(settings);

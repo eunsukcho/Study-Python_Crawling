@@ -1,7 +1,6 @@
 package com.crawlnews.study.service;
 
 import java.util.ArrayList;
-import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -24,7 +23,6 @@ public class ElasticService {
 	public Iterable<ElasticVO> findAll(){
 		Iterable<ElasticVO> list = new ArrayList<ElasticVO>();
 		list = repository.findAll();
-		System.out.println(list);
 		return list;
 	}
 	

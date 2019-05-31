@@ -1,19 +1,18 @@
 package com.crawlnews.study.vo;
 
-import org.springframework.data.elasticsearch.annotations.Document;
+import org.springframework.data.mongodb.core.mapping.Document;
 
-@Document(indexName = "naver", type = "navernews")
-public class ElasticVO {
-	
+@Document(collection="navernews")
+public class MongoVO {
 	private String id;
 	private String title;
 	private String content;
 	private String reg_date;
 	private String category;
 	
-	public ElasticVO() {}
+	public MongoVO() {}
 
-	public ElasticVO(String title, String content, String reg_date, String category) {
+	public MongoVO(String title, String content, String reg_date, String category) {
 		this.title = title;
 		this.content = content;
 		this.reg_date = reg_date;
@@ -51,5 +50,4 @@ public class ElasticVO {
 	public void setCategory(String category) {
 		this.category = category;
 	}
-
 }

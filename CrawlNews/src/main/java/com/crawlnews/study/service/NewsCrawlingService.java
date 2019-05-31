@@ -1,24 +1,38 @@
 package com.crawlnews.study.service;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.crawlnews.study.vo.NewsDataVO;
+import com.crawlnews.study.dto.MongoRepository;
+import com.crawlnews.study.vo.ElasticVO;
+import com.crawlnews.study.vo.MongoVO;
 import com.crawlnews.study.vo.NewsLinkVo;
 
 @Service
 public class NewsCrawlingService {
 	
-	public List<NewsLinkVo> newsLinkList() throws Exception{
+	@Autowired
+	ElasticService elasticService;
+	
+	@Autowired
+	MongoService mongoService;
+	
+	public List<NewsLinkVo> newsLinkList(String category, String currentDay) throws Exception{
 		
 		List<NewsLinkVo> newsLinkList = new ArrayList<NewsLinkVo>();
-		String startUrl = "https://news.naver.com/main/list.nhn?mode=LS2D&mid=shm&sid1=100&sid2=264&date=20190519&page=";
+		String startUrl = "https://news.naver.com/main/list.nhn?mode=LS2D&mid=shm&sid1=100&sid2=" + category + "&date="+currentDay+"&page=";
+		//String startUrl = "https://news.naver.com/main/list.nhn?mode=LS2D&mid=shm&sid1=100&sid2=264&date=20190531&page=";
 		Document document = null;
 		int i = 1;
 		String newLink = "";
@@ -26,7 +40,10 @@ public class NewsCrawlingService {
 		
 		while(true) {
 			document = Jsoup.connect(startUrl+i).get();
+			System.out.println("url : " + startUrl+i);
 			List<Element> newsElementList = new ArrayList<Element>();
+			String categoryName = document.select("div#main_content div h3").text();
+			
 			// 상위 10개 기사 수집
 			List<Element> element = document.select("ul.type06_headline li");
 			// 하위 10개 기사 수집
@@ -50,17 +67,17 @@ public class NewsCrawlingService {
 			for (Element e : newsElementList) {
 				String title = e.select("a").text();
 				String link = e.select("a").attr("abs:href");
-				NewsLinkVo vo = new NewsLinkVo(title, link);
+				NewsLinkVo vo = new NewsLinkVo(title, categoryName, link);
 				newsLinkList.add(vo);
 			}
 			i++;
 		}
-		
 		return newsLinkList;
 	}
 	
-	public List<NewsDataVO> newsDataList(List<NewsLinkVo> newsLinkList) throws Exception{
-		List<NewsDataVO> newsDataList = new ArrayList<NewsDataVO>();
+	public List<ElasticVO> newsDataList(List<NewsLinkVo> newsLinkList) throws Exception{
+		List<ElasticVO> elasticList = new ArrayList<ElasticVO>();
+		List<MongoVO> mongoList = new ArrayList<MongoVO>();
 		
 		newsLinkList.parallelStream().forEach(news -> {
 			Document document = null;
@@ -75,14 +92,19 @@ public class NewsCrawlingService {
 			String content = document.select("div#articleBodyContents").text();
 			
 			// vo에 해당 링크의 기사 제목, 내용, 등록일 setting
-			NewsDataVO vo = new NewsDataVO();
-			vo.setTitle(news.getTitle());
-			vo.setContent(content);
-			vo.setNewsDate(newsDate);
+			ElasticVO elVo = new ElasticVO(news.getTitle(), content, newsDate, news.getCategory());
+			MongoVO mongoVo = new MongoVO(news.getTitle(), content, newsDate, news.getCategory());
 			
-			newsDataList.add(vo);
+			elasticList.add(elVo);
+			
+			mongoList.add(mongoVo);
 		});
-		return newsDataList;
+		
+		for(MongoVO mongo : mongoList) { 
+			//mongoService.save(mongo);
+		}
+		
+		return elasticList;
 	}
 	
 }
