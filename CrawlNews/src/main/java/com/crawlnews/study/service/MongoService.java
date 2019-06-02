@@ -5,9 +5,8 @@ import java.util.ArrayList;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.crawlnews.study.dto.MongoRepository;
-import com.crawlnews.study.vo.ElasticVO;
-import com.crawlnews.study.vo.MongoVO;
+import com.crawlnews.study.domain.MongoDomain;
+import com.crawlnews.study.repository.MongoRepository;
 
 @Service
 public class MongoService {
@@ -15,17 +14,13 @@ public class MongoService {
 	@Autowired
 	MongoRepository mongoRepository;
 	
-	public MongoVO save(MongoVO vo) {
+	public MongoDomain save(MongoDomain vo) {
 		return mongoRepository.save(vo);
 	}
 	
-	public Iterable<MongoVO> findAll(){
-		Iterable<MongoVO> list = new ArrayList<MongoVO>();
+	public Iterable<MongoDomain> findAll(){
+		Iterable<MongoDomain> list = new ArrayList<MongoDomain>();
 		list = mongoRepository.findAll();
 		return list;
-	}
-	
-	public MongoVO findByTitle(String title) {
-		return mongoRepository.findByTitle(title);
 	}
 }

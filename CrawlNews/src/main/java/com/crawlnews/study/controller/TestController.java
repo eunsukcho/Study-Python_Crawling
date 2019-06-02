@@ -7,14 +7,25 @@ import java.util.StringTokenizer;
 import java.util.stream.IntStream;
 
 import org.apache.commons.lang.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.crawlnews.study.domain.CrawlDataDomain;
+import com.crawlnews.study.repository.CrawlDataRepository;
+import com.crawlnews.study.utils.VariableUtils;
+import com.crawlnews.study.vo.AnalyzeResponseVo;
 import com.crawlnews.study.vo.NewsDataVO;
+
+import net.sf.json.JSONObject;
+import com.google.gson.reflect.TypeToken;
 
 @RestController
 public class TestController {
 
+	@Autowired
+	CrawlDataRepository crawlRepository;
+	
 	@RequestMapping("/test1")
 	public void test() {
 		String man = "[[1, 소, 2, 닭, 3, 말]";
@@ -89,5 +100,37 @@ public class TestController {
 		/*
 		 * list.parallelStream().forEach(s->{ System.out.println(s.getTitle()); });
 		 */
+	}
+	
+	@RequestMapping("/test4")
+	public void test4() {
+		List<CrawlDataDomain> crawlDataDomainsList = crawlRepository.findAll();
+		System.out.println(crawlDataDomainsList);
+	}
+	
+	
+	@RequestMapping("/test5")
+	public void test5() {
+		CrawlDataDomain crawlDataDomain  = new CrawlDataDomain();
+		crawlDataDomain.setCategory("A");
+		crawlDataDomain.setElastic_id("A01");
+		crawlDataDomain.setMongo_id("B02");
+		crawlDataDomain.setTitle("C");
+		crawlDataDomain.setUploadDate(new Date());
+		crawlRepository.save(crawlDataDomain);
+	}
+	
+	
+	@RequestMapping("/test6")
+	public void test6() {
+		String testJson = "{\"detail\": {\"custom_analyzer\": false,\"analyzer\": {\"name\": \"org.apache.lucene.analysis.ko.KoreanAnalyzer\",\"tokens\": [{\"token\": \"아버지\",\"start_offset\": 0,\"end_offset\": 3,\"type\": \"word\",\"position\": 0,\"bytes\": \"[ec 95 84 eb b2 84 ec a7 80]\",\"leftPOS\": \"NNG(General Noun)\",\"morphemes\": null,\"posType\": \"MORPHEME\",\"positionLength\": 1,\"reading\": null,\"rightPOS\": \"NNG(General Noun)\",\"termFrequency\": 1},{\"token\": \"방\",\"start_offset\": 5,\"end_offset\": 6,\"type\": \"word\",\"position\": 2,\"bytes\": \"[eb b0 a9]\",\"leftPOS\": \"NNG(General Noun)\",\"morphemes\": null,\"posType\": \"MORPHEME\",\"positionLength\": 1,\"reading\": null,\"rightPOS\": \"NNG(General Noun)\",\"termFrequency\": 1},{\"token\": \"들어가\",\"start_offset\": 8,\"end_offset\": 11,\"type\": \"word\",\"position\": 4,\"bytes\": \"[eb 93 a4 ec 96 b4 ea b0 80]\",\"leftPOS\": \"VV(Verb)\",\"morphemes\": null,\"posType\": \"MORPHEME\",\"positionLength\": 1,\"reading\": null,\"rightPOS\": \"VV(Verb)\",\"termFrequency\": 1}]}}}";
+		JSONObject jsonObject = new JSONObject();
+		List<AnalyzeResponseVo> analyzeResponseVoList = VariableUtils.gson.fromJson(VariableUtils.gson.toJson(jsonObject.fromObject(jsonObject.fromObject(jsonObject.fromObject(VariableUtils.gson.fromJson(testJson, Object.class)).get("detail")).get("analyzer")).getJSONArray("tokens")), new TypeToken<List<AnalyzeResponseVo>>() {}.getType());
+		
+		for(AnalyzeResponseVo tmpAnalyzeResponseVo : analyzeResponseVoList) {
+			System.out.println(tmpAnalyzeResponseVo.getToken() + ", " + tmpAnalyzeResponseVo.getLeftPOS());
+		}
+		
+		System.out.println(VariableUtils.gson.toJson(analyzeResponseVoList));
 	}
 }

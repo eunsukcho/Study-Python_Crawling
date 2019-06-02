@@ -1,18 +1,19 @@
-package com.crawlnews.study.vo;
+package com.crawlnews.study.domain;
 
-import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.elasticsearch.annotations.Document;
 
-@Document(collection="navernews")
-public class MongoVO {
+@Document(indexName = "naver", type = "navernews")
+public class ElasticDomain {
+	
 	private String id;
 	private String title;
 	private String content;
 	private String reg_date;
 	private String category;
 	
-	public MongoVO() {}
+	public ElasticDomain() {}
 
-	public MongoVO(String title, String content, String reg_date, String category) {
+	public ElasticDomain(String title, String content, String reg_date, String category) {
 		this.title = title;
 		this.content = content;
 		this.reg_date = reg_date;
@@ -50,4 +51,5 @@ public class MongoVO {
 	public void setCategory(String category) {
 		this.category = category;
 	}
+
 }

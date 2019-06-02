@@ -1,12 +1,10 @@
 package com.crawlnews.study.service;
 
 import java.io.IOException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
-import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -14,9 +12,10 @@ import org.jsoup.nodes.Element;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.crawlnews.study.dto.MongoRepository;
-import com.crawlnews.study.vo.ElasticVO;
-import com.crawlnews.study.vo.MongoVO;
+import com.crawlnews.study.domain.ElasticDomain;
+import com.crawlnews.study.domain.MongoDomain;
+import com.crawlnews.study.repository.MongoRepository;
+import com.crawlnews.study.vo.AnalyzeResponseVo;
 import com.crawlnews.study.vo.NewsLinkVo;
 
 @Service
@@ -26,7 +25,10 @@ public class NewsCrawlingService {
 	ElasticService elasticService;
 	
 	@Autowired
-	MongoService mongoService;
+	CommunicationAnalyzeService communicationAnalyzeService;
+	
+	@Autowired
+	MongoRepository mongoRepository;
 	
 	public List<NewsLinkVo> newsLinkList(String category, String currentDay) throws Exception{
 		
@@ -75,9 +77,10 @@ public class NewsCrawlingService {
 		return newsLinkList;
 	}
 	
-	public List<ElasticVO> newsDataList(List<NewsLinkVo> newsLinkList) throws Exception{
-		List<ElasticVO> elasticList = new ArrayList<ElasticVO>();
-		List<MongoVO> mongoList = new ArrayList<MongoVO>();
+	public List<ElasticDomain> newsDataList(List<NewsLinkVo> newsLinkList) throws Exception{
+		List<ElasticDomain> elasticList = new ArrayList<ElasticDomain>();
+		Map<String, Integer> keywordRankingCountMap = new ConcurrentHashMap<>();
+		MongoDomain mongoDomain = new MongoDomain();
 		
 		newsLinkList.parallelStream().forEach(news -> {
 			Document document = null;
@@ -91,18 +94,33 @@ public class NewsCrawlingService {
 			String newsDate = document.select("div.article_info").select("div.sponsor span.t11").text();
 			String content = document.select("div#articleBodyContents").text();
 			
+			if(newsLinkList.indexOf(news) == 0) {
+				mongoDomain.setDate(newsDate);
+				mongoDomain.setCategory(news.category);
+			}
+			
 			// vo에 해당 링크의 기사 제목, 내용, 등록일 setting
-			ElasticVO elVo = new ElasticVO(news.getTitle(), content, newsDate, news.getCategory());
-			MongoVO mongoVo = new MongoVO(news.getTitle(), content, newsDate, news.getCategory());
+			ElasticDomain elVo = new ElasticDomain(news.getTitle(), content, newsDate, news.getCategory());
+			
+			//뉴스 기사 분석
+			List<AnalyzeResponseVo> analyzeResponseVoList = communicationAnalyzeService.runAnalyze(content);
+			
+			for(AnalyzeResponseVo tmpAnalyzeResponseVo : analyzeResponseVoList) {
+				if(tmpAnalyzeResponseVo.getLeftPOS().toUpperCase().startsWith("NNG")) {
+					if(keywordRankingCountMap.containsKey(tmpAnalyzeResponseVo.getToken())) {
+						keywordRankingCountMap.put(tmpAnalyzeResponseVo.getToken(), keywordRankingCountMap.get(tmpAnalyzeResponseVo.getToken())+1);
+					} else {
+						keywordRankingCountMap.put(tmpAnalyzeResponseVo.getToken(), 1);
+					}
+				}
+			}
 			
 			elasticList.add(elVo);
-			
-			mongoList.add(mongoVo);
 		});
 		
-		for(MongoVO mongo : mongoList) { 
-			//mongoService.save(mongo);
-		}
+		//MongoDB에 저장
+		mongoDomain.setKeywordRankMap(keywordRankingCountMap);
+		mongoRepository.save(mongoDomain);
 		
 		return elasticList;
 	}

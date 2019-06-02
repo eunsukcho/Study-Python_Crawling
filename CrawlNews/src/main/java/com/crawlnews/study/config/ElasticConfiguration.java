@@ -14,7 +14,7 @@ import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.ElasticsearchTemplate;
 import org.springframework.data.elasticsearch.repository.config.EnableElasticsearchRepositories;
 
-import com.crawlnews.study.vo.ElasticVO;
+import com.crawlnews.study.domain.ElasticDomain;
 
 @EnableElasticsearchRepositories
 @Configuration
@@ -40,10 +40,8 @@ public class ElasticConfiguration {
        return client;
     }
      
-     @Bean 
-     public ElasticsearchOperations elasticsearchTemplate() throws Exception{ 
-      ElasticsearchTemplate elasticsearchTemplate = new ElasticsearchTemplate(client());
-      elasticsearchTemplate.putMapping(ElasticVO.class);
-        return new ElasticsearchTemplate(client()); 
-     }
+	@Bean
+	public ElasticsearchOperations elasticsearchTemplate() throws Exception {
+		return new ElasticsearchTemplate(client());
+	}
 }

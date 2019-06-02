@@ -2,7 +2,6 @@ package com.crawlnews.study.vo;
 
 import org.springframework.data.elasticsearch.annotations.Document;
 
-@Document(indexName = "articles", type = "article")
 public class NewsDataVO {
 
 	public String title;
