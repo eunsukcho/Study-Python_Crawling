@@ -34,7 +34,6 @@ public class NewsCrawlingService {
 		
 		List<NewsLinkVo> newsLinkList = new ArrayList<NewsLinkVo>();
 		String startUrl = "https://news.naver.com/main/list.nhn?mode=LS2D&mid=shm&sid1=100&sid2=" + category + "&date="+currentDay+"&page=";
-		//String startUrl = "https://news.naver.com/main/list.nhn?mode=LS2D&mid=shm&sid1=100&sid2=264&date=20190531&page=";
 		Document document = null;
 		int i = 1;
 		String newLink = "";
@@ -94,6 +93,7 @@ public class NewsCrawlingService {
 			String newsDate = document.select("div.article_info").select("div.sponsor span.t11").text();
 			String content = document.select("div#articleBodyContents").text();
 			
+			//MongoDB에 저장하기 위한 값 setting
 			if(newsLinkList.indexOf(news) == 0) {
 				mongoDomain.setDate(newsDate);
 				mongoDomain.setCategory(news.category);
@@ -106,15 +106,14 @@ public class NewsCrawlingService {
 			List<AnalyzeResponseVo> analyzeResponseVoList = communicationAnalyzeService.runAnalyze(content);
 			
 			for(AnalyzeResponseVo tmpAnalyzeResponseVo : analyzeResponseVoList) {
-				if(tmpAnalyzeResponseVo.getLeftPOS().toUpperCase().startsWith("NNG")) {
-					if(keywordRankingCountMap.containsKey(tmpAnalyzeResponseVo.getToken())) {
+				if(tmpAnalyzeResponseVo.getLeftPOS().toUpperCase().startsWith("NNG")) { // lefePOS가 NNG로 시작할 경우(NNG = 명사)
+					if(keywordRankingCountMap.containsKey(tmpAnalyzeResponseVo.getToken())) { // map에 중복된 token이 존재할 경우 value++
 						keywordRankingCountMap.put(tmpAnalyzeResponseVo.getToken(), keywordRankingCountMap.get(tmpAnalyzeResponseVo.getToken())+1);
 					} else {
-						keywordRankingCountMap.put(tmpAnalyzeResponseVo.getToken(), 1);
+						keywordRankingCountMap.put(tmpAnalyzeResponseVo.getToken(), 1); // 중복된 token이 없을 경우 1을 put
 					}
 				}
 			}
-			
 			elasticList.add(elVo);
 		});
 		

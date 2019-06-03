@@ -3,6 +3,7 @@ package com.crawlnews.study.controller;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -19,6 +20,7 @@ import com.crawlnews.study.domain.MongoDomain;
 import com.crawlnews.study.service.ElasticService;
 import com.crawlnews.study.service.NewsCrawlingService;
 import com.crawlnews.study.vo.NewsLinkVo;
+import com.google.gson.Gson;
 
 
 @RestController
@@ -32,7 +34,8 @@ public class NewsCrawlingController {
 	
 	@RequestMapping(value = "/crawlNews", method = RequestMethod.GET)
 	public ResponseEntity<?> crawlNews() {
-		List<String> newsCategory = Arrays.asList(new String[] {"264", "265", "266", "267", "268", "269"});
+		Gson gson = new Gson();
+		List<String> newsCategory = Arrays.asList(new String[] {"264", "265", "266", "267", "268", "269"}); //네이버 뉴스 정치 파트 카테고리(ex. 청화대, 북한...등)의 값
 		
 		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd", Locale.KOREA);
 		Date currentDate = new Date();
@@ -41,35 +44,22 @@ public class NewsCrawlingController {
 		ResponseEntity<?> entity;
 		List<NewsLinkVo> newsLinkList = null;
 		Iterable<ElasticDomain> elasticList = null;
-		List<MongoDomain> mongoList = null;
+		
+		List<ElasticDomain> tmpList = new ArrayList<ElasticDomain>();
 		
 		try {
 			for(String e : newsCategory) {
-				newsLinkList = service.newsLinkList(e, currentDay);
-				elasticList = service.newsDataList(newsLinkList);
+				newsLinkList = service.newsLinkList(e, currentDay); //카테고리 value, 오늘 날짜별로 뉴스 링크 수집
+				elasticList = service.newsDataList(newsLinkList); //수집된 링크의 기사 내용 수집
+				tmpList.addAll((Collection<? extends ElasticDomain>) elasticList); //한 개의 카테고리에서 수집된 데이터들을 list에 이어서 add 
 			}
 			
-			for(ElasticDomain elstic : elasticList) { 
+			for(ElasticDomain elstic : tmpList) { 
 				elasticService.save(elstic);
 			}
 			
 			elasticList = elasticService.findAll();
-			entity = new ResponseEntity<Object>(elasticService.findAll(), HttpStatus.OK);
-		}catch (Exception e) {
-			e.printStackTrace();
-			return new ResponseEntity<Object>(e.getMessage(), HttpStatus.BAD_REQUEST);
-		}
-		return entity;
-	}
-	
-	@RequestMapping(value="/mongo", method = RequestMethod.GET)
-	public ResponseEntity<?> mongoData(){
-		ResponseEntity<?> entity;
-		List<MongoDomain> mongoList = new ArrayList<MongoDomain>();
-		
-		try {
-			
-			entity = new ResponseEntity<Object>(mongoList, HttpStatus.OK);
+			entity = new ResponseEntity<Object>(tmpList, HttpStatus.OK);
 		}catch (Exception e) {
 			e.printStackTrace();
 			return new ResponseEntity<Object>(e.getMessage(), HttpStatus.BAD_REQUEST);

@@ -26,5 +26,4 @@ public class NewsWebController {
 		
 		return "test";
 	}
-	
 }
